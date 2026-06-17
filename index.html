@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QA Work Timeline — SCB</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0b0f1a;
+    --surface: #131929;
+    --surface2: #1a2236;
+    --border: #1f2e47;
+    --accent: #00c896;
+    --accent-dim: rgba(0,200,150,0.12);
+    --accent2: #4f8ef7;
+    --accent2-dim: rgba(79,142,247,0.12);
+    --warn: #f59e42;
+    --warn-dim: rgba(245,158,66,0.12);
+    --red: #f75f5f;
+    --text: #e2e8f0;
+    --text-muted: #7a8fa8;
+    --text-dim: #4a6080;
+    --radius: 10px;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans Thai', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 0 80px;
+  }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, #0f1e35 0%, #0b1628 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 40px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-left h1 { font-size: 1.35rem; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+  .header-left h1 span { color: var(--accent); }
+  .header-left p { font-size: 0.78rem; color: var(--text-muted); margin-top: 3px; font-family: var(--mono); }
+
+  .header-right { display: flex; align-items: center; gap: 12px; }
+
+  /* Sync indicator */
+  .sync-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+    transition: background 0.3s;
+  }
+  .sync-dot.syncing { background: var(--warn); box-shadow: 0 0 6px var(--warn); animation: pulse 0.8s infinite; }
+  .sync-dot.error   { background: var(--red);  box-shadow: 0 0 6px var(--red); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .btn-add {
+    background: var(--accent);
+    color: #001a12;
+    border: none;
+    padding: 9px 20px;
+    border-radius: var(--radius);
+    font-family: var(--sans);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn-add:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-add:active { transform: none; }
+
+  /* FILTERS */
+  .filters {
+    padding: 14px 40px;
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .month-filters {
+    padding: 10px 40px;
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  .filter-label { font-size: 0.75rem; color: var(--text-muted); font-family: var(--mono); margin-right: 4px; }
+
+  .filter-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+    padding: 5px 13px; border-radius: 20px; font-size: 0.78rem;
+    cursor: pointer; transition: all 0.15s; font-family: var(--sans);
+  }
+  .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+  .month-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+    padding: 4px 14px; border-radius: 20px; font-size: 0.76rem;
+    cursor: pointer; transition: all 0.15s; font-family: var(--mono); white-space: nowrap;
+  }
+  .month-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+  .month-btn.active { background: var(--accent2-dim); border-color: var(--accent2); color: var(--accent2); }
+
+  .search-box {
+    margin-left: auto;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    padding: 7px 14px; border-radius: 8px; font-size: 0.85rem; font-family: var(--sans);
+    width: 220px; outline: none; transition: border-color 0.15s;
+  }
+  .search-box:focus { border-color: var(--accent); }
+  .search-box::placeholder { color: var(--text-dim); }
+
+  /* STATS */
+  .stats-bar {
+    padding: 14px 40px; display: flex; gap: 24px;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .stat { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text-muted); }
+  .stat-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .stat-num { font-family: var(--mono); font-weight: 500; color: var(--text); }
+
+  /* TIMELINE */
+  .timeline-wrap { padding: 40px 40px 0; max-width: 1100px; margin: 0 auto; }
+  .month-group { margin-bottom: 52px; }
+
+  .month-label {
+    font-family: var(--mono); font-size: 0.72rem; font-weight: 500; color: var(--text-dim);
+    letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .month-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .month-pill {
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; color: var(--text-muted); white-space: nowrap;
+  }
+
+  /* CARD */
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 22px; margin-bottom: 12px;
+    display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: start;
+    transition: border-color 0.15s, transform 0.1s; position: relative; overflow: hidden;
+  }
+  .card:hover { border-color: #2a3f60; transform: translateY(-1px); }
+  .card::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 3px 0 0 3px;
+  }
+  .card.task-UAT::before     { background: var(--accent); }
+  .card.task-SIT::before     { background: var(--accent2); }
+  .card.task-TC::before      { background: var(--warn); }
+  .card.task-Support::before { background: #a78bfa; }
+
+  .card-sr { font-family: var(--mono); font-size: 0.72rem; font-weight: 500; color: var(--text-dim); padding-top: 2px; white-space: nowrap; min-width: 80px; }
+
+  .card-name { font-size: 0.9rem; font-weight: 500; color: var(--text); line-height: 1.45; margin-bottom: 8px; }
+
+  .card-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  .tag { font-size: 0.7rem; font-family: var(--mono); padding: 2px 8px; border-radius: 4px; font-weight: 500; white-space: nowrap; }
+  .tag-app      { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+  .tag-task-UAT     { background: var(--accent-dim); color: var(--accent); }
+  .tag-task-SIT     { background: var(--accent2-dim); color: var(--accent2); }
+  .tag-task-TC      { background: var(--warn-dim); color: var(--warn); }
+  .tag-task-Support { background: rgba(167,139,250,0.12); color: #a78bfa; }
+
+  .remark { font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; font-style: italic; }
+
+  .card-actions { display: flex; gap: 6px; opacity: 0; transition: opacity 0.15s; }
+  .card:hover .card-actions { opacity: 1; }
+
+  .btn-icon {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted);
+    width: 32px; height: 32px; border-radius: 7px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 0.85rem;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .btn-icon.edit:hover { border-color: var(--accent2); color: var(--accent2); background: var(--accent2-dim); }
+  .btn-icon.del:hover  { border-color: var(--red);    color: var(--red);    background: rgba(247,95,95,0.1); }
+
+  /* MODAL */
+  .overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(5,10,20,0.85); z-index: 200;
+    align-items: center; justify-content: center; backdrop-filter: blur(4px);
+  }
+  .overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 32px 36px; width: 560px; max-width: 95vw; max-height: 90vh; overflow-y: auto;
+    animation: slideUp 0.2s ease;
+  }
+  @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+  .modal h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 24px; color: var(--text); }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { margin-bottom: 16px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label { display: block; font-size: 0.75rem; font-family: var(--mono); color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.05em; }
+
+  input, select, textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 9px 12px; border-radius: 8px; font-size: 0.87rem;
+    font-family: var(--sans); outline: none; transition: border-color 0.15s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  select option { background: var(--surface2); }
+  textarea { resize: vertical; min-height: 70px; }
+
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+
+  .btn-cancel {
+    background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+    padding: 9px 20px; border-radius: var(--radius); font-family: var(--sans); font-size: 0.87rem; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-cancel:hover { border-color: var(--text-muted); color: var(--text); }
+
+  .btn-save {
+    background: var(--accent); color: #001a12; border: none; padding: 9px 24px;
+    border-radius: var(--radius); font-family: var(--sans); font-size: 0.87rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+  }
+  .btn-save:hover { opacity: 0.88; }
+  .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* CONFIRM DELETE */
+  .confirm-modal {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 28px 32px; width: 380px; max-width: 95vw; text-align: center; animation: slideUp 0.2s ease;
+  }
+  .confirm-modal .icon { font-size: 2rem; margin-bottom: 12px; }
+  .confirm-modal h3 { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+  .confirm-modal p { font-size: 0.83rem; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5; }
+
+  .btn-del-confirm {
+    background: var(--red); color: #fff; border: none; padding: 9px 22px;
+    border-radius: var(--radius); font-family: var(--sans); font-size: 0.87rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+  }
+  .btn-del-confirm:hover { opacity: 0.85; }
+
+  /* EMPTY / LOADING */
+  .empty { text-align: center; padding: 60px 20px; color: var(--text-dim); }
+  .empty p { font-size: 0.9rem; margin-top: 12px; }
+
+  /* SETUP BANNER */
+  .setup-banner {
+    margin: 24px 40px; padding: 20px 24px;
+    background: rgba(245,158,66,0.08); border: 1px solid rgba(245,158,66,0.3);
+    border-radius: var(--radius); font-size: 0.85rem; line-height: 1.7; color: var(--warn);
+  }
+  .setup-banner strong { display: block; font-size: 0.95rem; margin-bottom: 8px; }
+  .setup-banner code {
+    background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 4px;
+    font-family: var(--mono); font-size: 0.8rem; color: var(--text);
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 30px; right: 30px;
+    background: var(--surface2); border: 1px solid var(--accent); color: var(--accent);
+    padding: 11px 20px; border-radius: 8px; font-size: 0.83rem; font-family: var(--mono);
+    z-index: 999; display: none; animation: fadeInUp 0.2s ease;
+  }
+  @keyframes fadeInUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>QA Work <span>Timeline</span></h1>
+    <p>SCB — Quality Assurance Tracking</p>
+  </div>
+  <div class="header-right">
+    <div class="sync-dot" id="syncDot" title="Database connection"></div>
+    <button class="btn-add" onclick="openAddModal()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Add Task
+    </button>
+  </div>
+</header>
+
+<div class="filters">
+  <span class="filter-label">Task:</span>
+  <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+  <button class="filter-btn" onclick="setFilter('UAT',this)">UAT</button>
+  <button class="filter-btn" onclick="setFilter('SIT',this)">SIT</button>
+  <button class="filter-btn" onclick="setFilter('UAT_SIT',this)">UAT &amp; SIT</button>
+  <button class="filter-btn" onclick="setFilter('TC',this)">TC</button>
+  <button class="filter-btn" onclick="setFilter('Support',this)">Support</button>
+  <input class="search-box" type="text" placeholder="🔍  Search tasks..." oninput="setSearch(this.value)">
+</div>
+
+<div class="month-filters" id="monthFilters">
+  <span class="filter-label">Month:</span>
+  <button class="month-btn active" onclick="setMonth('all',this)">All Months</button>
+</div>
+
+<div class="stats-bar" id="statsBar"></div>
+<div id="setupBanner"></div>
+<div class="timeline-wrap" id="timelineWrap">
+  <div class="empty"><p>⏳ Loading tasks...</p></div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="overlay" id="formOverlay" onclick="closeFormOnBg(event)">
+  <div class="modal">
+    <h2 id="modalTitle">Add New Task</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>SR.EPIC</label>
+        <input type="text" id="f_epic" placeholder="SR-XXXXX">
+      </div>
+      <div class="form-group">
+        <label>SR.Feature</label>
+        <input type="text" id="f_feature" placeholder="SR-XXXXX">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Task Name</label>
+      <textarea id="f_name" placeholder="Task description..."></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>App</label>
+        <select id="f_app">
+          <option value="MCN">MCN</option>
+          <option value="WSGW">WSGW</option>
+          <option value="New WSGW">New WSGW</option>
+          <option value="EPPD">EPPD</option>
+          <option value="MPS">MPS</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Release Month</label>
+        <input type="month" id="f_release">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Task Type</label>
+        <select id="f_task">
+          <option value="UAT only">UAT only</option>
+          <option value="SIT and UAT">SIT and UAT</option>
+          <option value="Support Test SIT and UAT">Support Test SIT and UAT</option>
+          <option value="TC only">TC only</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Status / Remark</label>
+        <input type="text" id="f_remark" placeholder="e.g. กำลัง UAT">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeForm()">Cancel</button>
+      <button class="btn-save" id="btnSave" onclick="saveTask()">Save Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM -->
+<div class="overlay" id="delOverlay" onclick="closeDelOnBg(event)">
+  <div class="confirm-modal">
+    <div class="icon">🗑️</div>
+    <h3>Delete this task?</h3>
+    <p id="delName" style="max-width:280px;margin:0 auto 24px;"></p>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button class="btn-cancel" onclick="closeDelModal()">Cancel</button>
+      <button class="btn-del-confirm" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ── Supabase JS SDK (CDN) ── -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  ⚙️  CONFIG — แก้ค่า 2 บรรทัดนี้หลัง setup Supabase
+// ═══════════════════════════════════════════════════
+const SUPABASE_URL = 'https://idklnagzkzfiqfytrubk.supabase.co';      // e.g. https://xxxx.supabase.co
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlka2xuYWd6a3pmaXFmeXRydWJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2ODU3MDEsImV4cCI6MjA5NzI2MTcwMX0.LhuBc0SP4EaQhgd42vfHQwNuTGYpCa829LXGuFebOe4'; // anon/public key
+// ═══════════════════════════════════════════════════
+
+const IS_CONFIGURED = !SUPABASE_URL.startsWith('YOUR_');
+
+const MONTH_NAMES = {
+  '2026-07':'July 2026','2026-08':'August 2026',
+  '2026-09':'September 2026','2026-10':'October 2026',
+};
+
+const TASK_KEY = task => {
+  const t = (task||'').toLowerCase();
+  if (t.includes('support')) return 'Support';
+  if (t.includes('tc'))      return 'TC';
+  if (t.includes('sit'))     return 'SIT';
+  if (t.includes('uat'))     return 'UAT';
+  return 'Other';
+};
+
+// ── Supabase client ──
+let sb = null;
+if (IS_CONFIGURED) {
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
+
+// ── State ──
+let tasks      = [];
+let filterType = 'all';
+let filterMonth= 'all';
+let searchQ    = '';
+let editId     = null;
+let deleteId   = null;
+
+// ── Sync dot ──
+function setSyncState(state) { // 'ok'|'syncing'|'error'
+  const dot = document.getElementById('syncDot');
+  dot.className = 'sync-dot' + (state !== 'ok' ? ' ' + state : '');
+  dot.title = state === 'ok' ? 'Connected to Supabase' : state === 'syncing' ? 'Syncing...' : 'Connection error';
+}
+
+// ══════════════════════════════════════
+//  DATABASE OPERATIONS
+// ══════════════════════════════════════
+async function loadTasks() {
+  if (!IS_CONFIGURED) {
+    showSetupBanner();
+    loadSampleData();
+    render();
+    return;
+  }
+  setSyncState('syncing');
+  try {
+    const { data, error } = await sb.from('tasks').select('*').order('release', { ascending: true });
+    if (error) throw error;
+    tasks = data.map(dbToTask);
+    setSyncState('ok');
+    render();
+  } catch (e) {
+    setSyncState('error');
+    showToast('❌ โหลดข้อมูลไม่ได้: ' + e.message);
+    loadSampleData();
+    render();
+  }
+}
+
+async function insertTask(data) {
+  setSyncState('syncing');
+  const { data: rows, error } = await sb.from('tasks').insert([taskToDb(data)]).select();
+  if (error) throw error;
+  setSyncState('ok');
+  return rows[0];
+}
+
+async function updateTask(id, data) {
+  setSyncState('syncing');
+  const { error } = await sb.from('tasks').update(taskToDb(data)).eq('id', id);
+  if (error) throw error;
+  setSyncState('ok');
+}
+
+async function deleteTask(id) {
+  setSyncState('syncing');
+  const { error } = await sb.from('tasks').delete().eq('id', id);
+  if (error) throw error;
+  setSyncState('ok');
+}
+
+// ── map DB row ↔ app object ──
+function dbToTask(row) {
+  return {
+    id:      row.id,
+    epic:    row.epic    || '',
+    feature: row.feature || '',
+    name:    row.name    || '',
+    app:     row.app     || '',
+    release: row.release || '',
+    task:    row.task    || '',
+    remark:  row.remark  || '',
+  };
+}
+
+function taskToDb(t) {
+  return { epic: t.epic, feature: t.feature, name: t.name, app: t.app, release: t.release, task: t.task, remark: t.remark };
+}
+
+// ── Realtime subscription ──
+function subscribeRealtime() {
+  if (!sb) return;
+  sb.channel('tasks-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
+      loadTasks(); // reload on any change from other users
+    })
+    .subscribe();
+}
+
+// ── Sample data (fallback when not configured) ──
+function loadSampleData() {
+  tasks = [
+    { id:1,  epic:'SR-58575', feature:'SR-58576', name:'[CB][WSGW] : Standard Payment Gateway via sFTP Setup Profile Historical Payment Gateway for BLUE PAY CO., LTD', app:'WSGW', release:'2026-07', task:'UAT only', remark:'กำลัง UAT' },
+    { id:2,  epic:'SR-58660', feature:'SR-58661', name:'[CB][WSGW] : Standard Bill Payment Historical FTP T2P COMPANY LIMITED', app:'WSGW', release:'2026-07', task:'UAT only', remark:'กำลัง UAT' },
+    { id:3,  epic:'SR-57191', feature:'SR-57210', name:'[Bill Payment] TRUE-DTAC One Brand - MCN Change Endpoint and Format_MVP1 [MCN] Change endpoint', app:'MCN', release:'2026-07', task:'SIT and UAT', remark:'กำลัง SIT' },
+    { id:4,  epic:'SR-58409', feature:'SR-58434', name:'[Bill Payment] Setup MCN Template for Standard BP H2H with Payer Information_MVP1', app:'MCN', release:'2026-07', task:'SIT and UAT', remark:'กำลัง SIT' },
+    { id:5,  epic:'SR-58754', feature:'SR-58757', name:'[EPPD] Resolve Previously Exempted Security Findings - STD_202500215, STD_202601605', app:'EPPD', release:'2026-07', task:'UAT only', remark:'กำลัง UAT' },
+    { id:6,  epic:'SR-53081', feature:'SR-53085', name:'[CB][WSGW] : Enhance special bill payment 256 file for การประปาส่วนภูมิภาค (PWA)', app:'WSGW', release:'2026-07', task:'UAT only', remark:'Support UAT' },
+    { id:7,  epic:'SR-57383', feature:'SR-56134', name:'[New WebService] Enhance IWS to support new core banking release 2.0', app:'New WSGW', release:'2026-08', task:'SIT and UAT', remark:'กำลัง UAT กับทาง PTT' },
+    { id:8,  epic:'SR-52143', feature:'SR-52611', name:'[New WSGW] Support test Direct Approve_Bangchank Change IP Address', app:'New WSGW', release:'2026-08', task:'Support Test SIT and UAT', remark:'SIT แล้วกำลัง UAT' },
+    { id:9,  epic:'SR-52143', feature:'SR-52744', name:'[New WSGW] Support test Bill Payment_Bangchak Change Endpoint URL', app:'WSGW', release:'2026-08', task:'Support Test SIT and UAT', remark:'SIT แล้วกำลัง UAT' },
+    { id:10, epic:'SR-54820', feature:'SR-57509', name:'[QA MPS]-Test MPS-Cap limit', app:'MPS', release:'2026-09', task:'SIT and UAT', remark:'ทำ TC และเริ่ม SIT July 2026' },
+    { id:11, epic:'SR-56021', feature:'SR-57925', name:'[Bill Payment] Enhance MCN Report for semi-colon - [MCN] Develop & test.', app:'MCN', release:'2026-09', task:'SIT and UAT', remark:'ทำ TC และเริ่ม SIT July 2026' },
+    { id:12, epic:'SR-52921', feature:'SR-55532', name:'[Bill Payment] API Standardization and Sandbox_MVP 2.0 [QA] Test all features', app:'Other', release:'2026-10', task:'SIT and UAT', remark:'ทำ TC และเริ่ม SIT July 2026' },
+    { id:13, epic:'SR-52921', feature:'SR-55536', name:'[Bill Payment] API Standardization and Sandbox_MVP 2.0 [MPS] Onboarding biller', app:'MPS', release:'2026-10', task:'SIT and UAT', remark:'ทำ TC และเริ่ม SIT July 2026' },
+  ];
+}
+
+function showSetupBanner() {
+  document.getElementById('setupBanner').innerHTML = `
+    <div class="setup-banner">
+      <strong>⚙️ ยังไม่ได้ตั้งค่า Supabase — กำลังแสดงข้อมูลตัวอย่าง (ไม่ sync)</strong>
+      แก้ไขไฟล์ <code>index.html</code> บรรทัด <code>SUPABASE_URL</code> และ <code>SUPABASE_KEY</code>
+      ตาม <code>SETUP.md</code> แล้ว push ขึ้น GitHub อีกครั้ง
+    </div>`;
+}
+
+// ══════════════════════════════════════
+//  FILTERS & RENDER
+// ══════════════════════════════════════
+function setFilter(type, btn) {
+  filterType = type;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function setMonth(month, btn) {
+  filterMonth = month;
+  document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function setSearch(val) { searchQ = val.toLowerCase(); render(); }
+
+function filtered() {
+  return tasks.filter(t => {
+    const key = TASK_KEY(t.task);
+    if (filterType === 'UAT_SIT') { if (key !== 'UAT' && key !== 'SIT') return false; }
+    else if (filterType !== 'all' && key !== filterType) return false;
+    if (filterMonth !== 'all' && t.release !== filterMonth) return false;
+    if (searchQ) {
+      const hay = `${t.epic} ${t.feature} ${t.name} ${t.app} ${t.remark}`.toLowerCase();
+      if (!hay.includes(searchQ)) return false;
+    }
+    return true;
+  });
+}
+
+function renderMonthButtons() {
+  const months = [...new Set(tasks.map(t => t.release).filter(Boolean))].sort();
+  const bar = document.getElementById('monthFilters');
+  bar.querySelectorAll('.month-btn').forEach((b,i) => { if (i > 0) b.remove(); });
+  months.forEach(m => {
+    const label = MONTH_NAMES[m] || m;
+    const btn = document.createElement('button');
+    btn.className = 'month-btn' + (filterMonth === m ? ' active' : '');
+    btn.textContent = label;
+    btn.onclick = () => setMonth(m, btn);
+    bar.appendChild(btn);
+  });
+}
+
+function render() {
+  renderMonthButtons();
+  const list = filtered();
+
+  // Stats
+  const counts = { UAT:0, SIT:0, TC:0, Support:0 };
+  tasks.forEach(t => { const k = TASK_KEY(t.task); if (counts[k]!==undefined) counts[k]++; });
+  const colors  = { UAT:'#00c896', SIT:'#4f8ef7', TC:'#f59e42', Support:'#a78bfa' };
+  document.getElementById('statsBar').innerHTML =
+    Object.entries(counts).map(([k,v]) =>
+      `<div class="stat"><div class="stat-dot" style="background:${colors[k]}"></div>${k}: <span class="stat-num">${v}</span></div>`
+    ).join('') + `<div class="stat" style="margin-left:auto">Total: <span class="stat-num">${tasks.length}</span></div>`;
+
+  // Group by month
+  const groups = {};
+  list.forEach(t => { const m = t.release||'Unknown'; if (!groups[m]) groups[m]=[]; groups[m].push(t); });
+  const months = Object.keys(groups).sort();
+  const wrap = document.getElementById('timelineWrap');
+
+  if (!months.length) {
+    wrap.innerHTML = `<div class="empty"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg><p>No tasks found</p></div>`;
+    return;
+  }
+
+  wrap.innerHTML = months.map(m => {
+    const label = MONTH_NAMES[m] || m;
+    const cards = groups[m].map(t => {
+      const key = TASK_KEY(t.task);
+      return `
+        <div class="card task-${key}" data-id="${t.id}">
+          <div class="card-sr">${t.epic}<br><span style="color:var(--text-dim);font-size:0.65rem">${t.feature}</span></div>
+          <div class="card-body">
+            <div class="card-name">${escHtml(t.name)}</div>
+            <div class="card-meta">
+              <span class="tag tag-app">${escHtml(t.app)}</span>
+              <span class="tag tag-task-${key}">${escHtml(t.task)}</span>
+            </div>
+            ${t.remark ? `<div class="remark">${escHtml(t.remark)}</div>` : ''}
+          </div>
+          <div class="card-actions">
+            <button class="btn-icon edit" title="Edit"   onclick="openEditModal('${t.id}')">✏️</button>
+            <button class="btn-icon del"  title="Delete" onclick="openDelModal('${t.id}')">🗑️</button>
+          </div>
+        </div>`;
+    }).join('');
+    return `<div class="month-group">
+      <div class="month-label">
+        <span class="month-pill">📅 ${label}</span>
+        <span style="color:var(--text-dim);font-size:0.7rem">${groups[m].length} task${groups[m].length>1?'s':''}</span>
+      </div>${cards}</div>`;
+  }).join('');
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══════════════════════════════════════
+//  FORM — ADD / EDIT
+// ══════════════════════════════════════
+function openAddModal() {
+  editId = null;
+  document.getElementById('modalTitle').textContent = 'Add New Task';
+  ['f_epic','f_feature','f_name','f_remark'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f_app').value  = 'MCN';
+  document.getElementById('f_task').value = 'SIT and UAT';
+  document.getElementById('f_release').value = '';
+  document.getElementById('formOverlay').classList.add('open');
+}
+
+function openEditModal(id) {
+  const t = tasks.find(x => String(x.id) === String(id));
+  if (!t) return;
+  editId = t.id;
+  document.getElementById('modalTitle').textContent = 'Edit Task';
+  document.getElementById('f_epic').value    = t.epic    || '';
+  document.getElementById('f_feature').value = t.feature || '';
+  document.getElementById('f_name').value    = t.name    || '';
+  document.getElementById('f_app').value     = t.app     || 'MCN';
+  document.getElementById('f_release').value = t.release || '';
+  document.getElementById('f_task').value    = t.task    || 'SIT and UAT';
+  document.getElementById('f_remark').value  = t.remark  || '';
+  document.getElementById('formOverlay').classList.add('open');
+}
+
+function closeForm() { document.getElementById('formOverlay').classList.remove('open'); }
+function closeFormOnBg(e) { if (e.target === document.getElementById('formOverlay')) closeForm(); }
+
+async function saveTask() {
+  const data = {
+    epic:    document.getElementById('f_epic').value.trim(),
+    feature: document.getElementById('f_feature').value.trim(),
+    name:    document.getElementById('f_name').value.trim(),
+    app:     document.getElementById('f_app').value,
+    release: document.getElementById('f_release').value,
+    task:    document.getElementById('f_task').value,
+    remark:  document.getElementById('f_remark').value.trim(),
+  };
+  if (!data.name)    { alert('Please enter a task name.'); return; }
+  if (!data.release) { alert('Please select a release month.'); return; }
+
+  const btn = document.getElementById('btnSave');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  try {
+    if (!IS_CONFIGURED) {
+      // offline mode
+      if (editId) {
+        const idx = tasks.findIndex(x => x.id === editId);
+        tasks[idx] = { ...tasks[idx], ...data };
+      } else {
+        tasks.push({ id: Date.now(), ...data });
+      }
+      showToast(editId ? '✅ Task updated (local)' : '✅ Task added (local)');
+    } else if (editId) {
+      await updateTask(editId, data);
+      const idx = tasks.findIndex(x => x.id === editId);
+      tasks[idx] = { ...tasks[idx], ...data };
+      showToast('✅ Task updated');
+    } else {
+      const row = await insertTask(data);
+      tasks.push(dbToTask(row));
+      showToast('✅ Task added');
+    }
+    closeForm();
+    render();
+  } catch (e) {
+    setSyncState('error');
+    showToast('❌ Error: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Task';
+  }
+}
+
+// ══════════════════════════════════════
+//  DELETE
+// ══════════════════════════════════════
+function openDelModal(id) {
+  deleteId = id;
+  const t = tasks.find(x => String(x.id) === String(id));
+  document.getElementById('delName').textContent = t ? t.name.slice(0,100)+(t.name.length>100?'…':'') : '';
+  document.getElementById('delOverlay').classList.add('open');
+}
+
+function closeDelModal() { document.getElementById('delOverlay').classList.remove('open'); deleteId = null; }
+function closeDelOnBg(e) { if (e.target === document.getElementById('delOverlay')) closeDelModal(); }
+
+async function confirmDelete() {
+  try {
+    if (IS_CONFIGURED) await deleteTask(deleteId);
+    tasks = tasks.filter(x => String(x.id) !== String(deleteId));
+    closeDelModal(); render();
+    showToast('🗑️ Task deleted');
+  } catch (e) {
+    setSyncState('error');
+    showToast('❌ Error: ' + e.message);
+  }
+}
+
+// ── Toast ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 2800);
+}
+
+// ── Init ──
+loadTasks();
+subscribeRealtime();
+</script>
+</body>
+</html>
