@@ -273,6 +273,71 @@
     font-family: var(--mono); font-size: 0.8rem; color: var(--text);
   }
 
+  /* EXPORT */
+  .btn-export {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 9px 16px;
+    border-radius: var(--radius);
+    font-family: var(--sans);
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .btn-export:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .export-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    min-width: 220px;
+    z-index: 300;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    animation: slideUp 0.15s ease;
+  }
+  .export-dropdown.open { display: block; }
+
+  .export-section-label {
+    font-size: 0.68rem;
+    font-family: var(--mono);
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 10px 16px 6px;
+  }
+
+  .export-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.1s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    font-family: var(--sans);
+  }
+  .export-item:hover { background: var(--surface2); color: var(--text); }
+  .export-item .ei-icon { font-size: 1rem; width: 20px; text-align: center; }
+  .export-item .ei-sub { font-size: 0.72rem; color: var(--text-dim); font-family: var(--mono); margin-left: auto; }
+
+  .export-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
   /* TOAST */
   .toast {
     position: fixed; bottom: 30px; right: 30px;
@@ -292,6 +357,30 @@
   </div>
   <div class="header-right">
     <div class="sync-dot" id="syncDot" title="Database connection"></div>
+    <div style="position:relative">
+      <button class="btn-export" id="btnExport" onclick="toggleExportMenu(event)">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M1 10v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Export
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+      <div class="export-dropdown" id="exportDropdown">
+        <div class="export-section-label">Export All Tasks</div>
+        <button class="export-item" onclick="exportData('all','csv')">
+          <span class="ei-icon">📄</span> CSV — All Tasks <span class="ei-sub">all</span>
+        </button>
+        <button class="export-item" onclick="exportData('all','excel')">
+          <span class="ei-icon">📊</span> Excel — All Tasks <span class="ei-sub">all</span>
+        </button>
+        <div class="export-divider"></div>
+        <div class="export-section-label">Export ตาม Filter ปัจจุบัน</div>
+        <button class="export-item" onclick="exportData('filtered','csv')">
+          <span class="ei-icon">📄</span> CSV — Filtered <span class="ei-sub" id="exportFilterLabel">all</span>
+        </button>
+        <button class="export-item" onclick="exportData('filtered','excel')">
+          <span class="ei-icon">📊</span> Excel — Filtered <span class="ei-sub" id="exportFilterLabel2">all</span>
+        </button>
+      </div>
+    </div>
     <button class="btn-add" onclick="openAddModal()">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       Add Task
@@ -552,6 +641,7 @@ function setFilter(type, btn) {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   render();
+  updateExportLabel();
 }
 
 function setMonth(month, btn) {
@@ -559,9 +649,10 @@ function setMonth(month, btn) {
   document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   render();
+  updateExportLabel();
 }
 
-function setSearch(val) { searchQ = val.toLowerCase(); render(); }
+function setSearch(val) { searchQ = val.toLowerCase(); render(); updateExportLabel(); }
 
 function filtered() {
   return tasks.filter(t => {
@@ -748,6 +839,104 @@ async function confirmDelete() {
     setSyncState('error');
     showToast('❌ Error: ' + e.message);
   }
+}
+
+// ══════════════════════════════════════
+//  EXPORT
+// ══════════════════════════════════════
+function toggleExportMenu(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('exportDropdown');
+  dd.classList.toggle('open');
+  updateExportLabel();
+}
+
+document.addEventListener('click', () => {
+  document.getElementById('exportDropdown').classList.remove('open');
+});
+
+function updateExportLabel() {
+  const typeLabel = filterType === 'all' ? 'all' : filterType === 'UAT_SIT' ? 'UAT&SIT' : filterType;
+  const monthLabel = filterMonth === 'all' ? '' : ' · ' + (MONTH_NAMES[filterMonth] || filterMonth);
+  const label = typeLabel + monthLabel + (searchQ ? ' · search' : '');
+  document.getElementById('exportFilterLabel').textContent  = label;
+  document.getElementById('exportFilterLabel2').textContent = label;
+}
+
+function exportData(scope, format) {
+  document.getElementById('exportDropdown').classList.remove('open');
+  const data = scope === 'all' ? tasks : filtered();
+  if (!data.length) { showToast('⚠️ ไม่มีข้อมูลที่จะ Export'); return; }
+
+  const scopeLabel = scope === 'all' ? 'all' : 'filtered';
+  const filename = `QA_Timeline_${scopeLabel}_${new Date().toISOString().slice(0,10)}`;
+
+  if (format === 'csv') exportCSV(data, filename);
+  else exportExcel(data, filename);
+}
+
+function toRows(data) {
+  const headers = ['SR.EPIC','SR.Feature','Task Name','App','Release Month','Task Type','Remark'];
+  const rows = data.map(t => [
+    t.epic, t.feature, t.name, t.app,
+    MONTH_NAMES[t.release] || t.release,
+    t.task, t.remark
+  ]);
+  return { headers, rows };
+}
+
+function exportCSV(data, filename) {
+  const { headers, rows } = toRows(data);
+  const escape = v => `"${String(v||'').replace(/"/g,'""')}"`;
+  const lines = [
+    headers.map(escape).join(','),
+    ...rows.map(r => r.map(escape).join(','))
+  ];
+  // BOM for Thai characters in Excel
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  downloadBlob(blob, filename + '.csv');
+  showToast(`✅ Export CSV สำเร็จ (${data.length} tasks)`);
+}
+
+function exportExcel(data, filename) {
+  const { headers, rows } = toRows(data);
+
+  // Build Excel XML (SpreadsheetML) — no external library needed
+  const xmlRows = [headers, ...rows].map(row =>
+    '<Row>' + row.map(v =>
+      `<Cell><Data ss:Type="String">${String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</Data></Cell>`
+    ).join('') + '</Row>'
+  ).join('');
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Styles>
+  <Style ss:ID="header">
+   <Font ss:Bold="1"/>
+   <Interior ss:Color="#0F1E35" ss:Pattern="Solid"/>
+   <Font ss:Color="#00C896" ss:Bold="1"/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="QA Timeline">
+  <Table>${xmlRows}</Table>
+ </Worksheet>
+</Workbook>`;
+
+  const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  downloadBlob(blob, filename + '.xls');
+  showToast(`✅ Export Excel สำเร็จ (${data.length} tasks)`);
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // ── Toast ──
